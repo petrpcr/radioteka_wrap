@@ -1,0 +1,17 @@
+{
+  "name": "radioteka",
+  "version": "1.0.0",
+  "description": "Stahování mp3 souborů z radiotéky",
+  "main": "radioteka.js",
+  "scripts": {
+    "test": "test"
+  },
+  "keywords": [
+    "radioteka"
+  ],
+  "author": "Petr Pokorný",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^8.0.50"
+  }
+}
