@@ -1,9 +1,10 @@
 {
     "compilerOptions": {
-        
+        "target":"es5",
         "module":"commonjs",
         "outDir": "./",
-        "strict": true
+        "strict": true,
+        "sourceMap": true
     },
     "include": [
         "src/**/*"

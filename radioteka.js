@@ -1,35 +1,25 @@
 "use strict";
-exports.__esModule = true;
-var http = require("http");
-http.get('http://www.rozhlas.cz/dvojka/stream/', function (res) {
-    var statusCode = res.statusCode;
-    var contentType = res.headers['content-type'].toString();
-    var error;
-    if (statusCode !== 200) {
-        error = new Error('Request Failed.\n' +
-            ("Status Code: " + statusCode));
+Object.defineProperty(exports, "__esModule", { value: true });
+var cheerio = require("cheerio");
+var htmlget_1 = require("./htmlget");
+var UrlRadioteka = 'http://www.rozhlas.cz/dvojka/stream/';
+function capitalize(pString) {
+    pString = pString.trim().replace(/ /g, "_");
+    return pString.charAt(0).toUpperCase() + pString.slice(1);
+}
+function Parsuj(pHtmlBody, pCntent) {
+    var $ = cheerio.load(pHtmlBody);
+    var items = $('li[class=item]');
+    for (var _i = 0, items_1 = items; _i < items_1.length; _i++) {
+        var element = items_1[_i];
+        var el = cheerio.load(element);
+        var Nadpisy = el('div[class=image] > a')[0].attribs.title.split(":");
+        var Nazev = capitalize(Nadpisy[0]);
+        var Soubor = capitalize(Nadpisy[1]);
+        var ID = el('a[class="icon player-archive"]')[0].attribs.href.split("/").slice(-1).pop();
+        var uu = 1;
     }
-    else if (!/^text\/html/.test(contentType)) {
-        error = new Error('Invalid content-type.\n' +
-            ("Expected application/json but received " + contentType));
-    }
-    if (error) {
-        console.error(error.message);
-        // consume response data to free up memory
-        res.resume();
-        return;
-    }
-    res.setEncoding('utf8');
-    var rawData = '';
-    res.on('data', function (chunk) { rawData += chunk; });
-    res.on('end', function () {
-        try {
-            console.log(rawData);
-        }
-        catch (e) {
-            console.error(e.message);
-        }
-    });
-}).on('error', function (e) {
-    console.error("Got error: " + e.message);
-});
+    ;
+}
+htmlget_1.GetHtml(UrlRadioteka, Parsuj);
+//# sourceMappingURL=radioteka.js.map

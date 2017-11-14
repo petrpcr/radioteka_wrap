@@ -10,6 +10,7 @@
             "name": "Launch Program",
             "program": "${workspaceFolder}/radioteka.js",
             "preLaunchTask": "tsc: build - tsconfig.json",
+            "sourceMaps": true,
             "outFiles": [
                 "${workspaceFolder}//**/*.js"
             ]
