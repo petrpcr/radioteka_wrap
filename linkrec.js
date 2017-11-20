@@ -2,15 +2,23 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var fs_1 = require("fs");
 var linkRec = /** @class */ (function () {
-    function linkRec(Folder, Name, ID) {
-        this.Folder = Folder;
-        this.Name = Name;
-        this.ID = ID;
+    function linkRec(_Folder, _Name, _ID) {
+        this._Folder = _Folder;
+        this._Name = _Name;
+        this._ID = _ID;
         this.Date = new Date();
+        this._Name = (this._Name || '') == '' ? this._Folder : this._Name;
     }
+    Object.defineProperty(linkRec.prototype, "folderName", {
+        get: function () {
+            return this._Folder;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Object.defineProperty(linkRec.prototype, "fileName", {
         get: function () {
-            return this.Name + '.mp3';
+            return this._Name + '.mp3';
         },
         enumerable: true,
         configurable: true

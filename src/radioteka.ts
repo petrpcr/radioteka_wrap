@@ -1,38 +1,38 @@
 
 const cheerio = require("cheerio");
+const sanitize = require("sanitize-filename")
 
-import {GetHtml}  from "./htmlget"
-import {linkRec,linkRecStore} from "./linkrec"
+import { GetHtml } from "./htmlget"
+import { linkRec, linkRecStore } from "./linkrec"
 
-var UrlRadioteka : string ='http://www.rozhlas.cz/dvojka/stream/';
-var RecordStore = new linkRecStore();
+var UrlRadioteka: string = 'http://www.rozhlas.cz/dvojka/stream/';
+var UrlRadioteka_mp3 : string = 'http://media.rozhlas.cz/_audio/'
+var DataPath :string = './'
+var DataFileNameStore : string = 'radioteka.json'
 
-function capitalize(pString:string):string {
-  pString = pString.trim().replace(/ /g,"_")
-  return pString.charAt(0).toUpperCase() + pString.slice(1);
+var RecordStore = new linkRecStore(DataPath,DataFileNameStore,UrlRadioteka_mp3);
+
+function capitalize(pString: string): string {
+  try {
+    pString = sanitize(pString.trim().replace(/[//]/g,"_"))
+    return pString.charAt(0).toUpperCase() + pString.slice(1);
+  }
+  catch{
+    return ''
+  }
 }
 
- function Parsuj(pHtmlBody:string,pCntent:string){
+function Parsuj(pHtmlBody: string, pCntent: string) {
   const $ = cheerio.load(pHtmlBody);
   const LR = new linkRecStore();
-
-  LR.linkRec = $('li[class=item]').each((index:number,element:any) => {
-    var el = cheerio.load(element)
- 
-    var Nadpisy = el('div[class=image] > a')[0].attribs.title.split(":");
-    var Nazev = capitalize(Nadpisy[0])
-    var Soubor = capitalize(Nadpisy[1])
-    var icon = el('a[class="icon player-archive"]')
-    if (!icon){
-      return
-    }
-    var ID = icon[0].attribs.href.split("/").slice(-1).pop()
-    var lrT = new linkRec(Nazev,Soubor,ID)
-    return lrT
+  LR.linkRec = $('li[class=item] > a[class="icon player-archive"]').map((index: number, elm: any) => {
+    var Nadpisy = $(elm).parent().children('div[class=image]').children()[0].attribs.title.split(":")
+    var ID = elm.attribs.href.split("/").slice(-1).pop()
+    return new linkRec(capitalize(Nadpisy[0]), capitalize(Nadpisy[1]), ID)
   });
 
   console.log(LR)
- }
+}
 
- GetHtml(UrlRadioteka,Parsuj);
+GetHtml(UrlRadioteka, Parsuj);
 

@@ -3,7 +3,7 @@ import { get } from "http";
 
 export function GetHtml(pUrl: string, BodyParse: (rawBody: string,content:string) => void) {
 
-    get(pUrl, (res) => {
+    get(pUrl, (res:any) => {
         const { statusCode } = res;
         const contentType: string = res.headers['content-type'].toString();
 
@@ -25,7 +25,7 @@ export function GetHtml(pUrl: string, BodyParse: (rawBody: string,content:string
 
         res.setEncoding('utf8');
         let rawBody = "";
-        res.on('data', (chunk) => {rawBody += chunk; });
+        res.on('data', (chunk:any) => {rawBody += chunk; });
         res.on('end', () => {
             BodyParse(rawBody,contentType)
         });
@@ -34,3 +34,16 @@ export function GetHtml(pUrl: string, BodyParse: (rawBody: string,content:string
         console.error(`Got error: ${e.message}`);
     });
 }
+
+export function DownloadFile(url:string, dest:string, cb) {
+    var file = fs.createWriteStream(dest);
+    var request = http.get(url, function(response) {
+      response.pipe(file);
+      file.on('finish', function() {
+        file.close(cb);  // close() is async, call cb after close completes.
+      });
+    }).on('error', function(err) { // Handle errors
+      fs.unlink(dest); // Delete the file async. (But we don't check the result)
+      if (cb) cb(err.message);
+    });
+  };
