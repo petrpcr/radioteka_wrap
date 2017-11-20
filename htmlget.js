@@ -38,8 +38,8 @@ function DownloadFile(url, dest, commit, error) {
     var request = http_1.get(url, function (response) {
         response.pipe(file);
         file.on('finish', function () {
-            file.close(); // close() is async, call cb after close completes.
             commit();
+            file.close(); // close() is async, call cb after close completes.
         });
     }).on('error', function (err) {
         fs.unlinkSync(dest); // Delete the file async. (But we don't check the result)

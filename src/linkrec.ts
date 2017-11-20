@@ -49,7 +49,6 @@ export class linkRecStore {
     }
     public set linkRec(pLinkRec: Array<linkRec>) {
         
-        
         pLinkRec.forEach( item => {
 
             if (!this._linkRec.some(itemthis => {

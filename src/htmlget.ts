@@ -41,8 +41,8 @@ export function DownloadFile(url:string, dest:string, commit:() => void,error:(m
     var request = get(url, response => {
       response.pipe(file);
       file.on('finish', () => {
-        file.close();  // close() is async, call cb after close completes.
         commit();
+        file.close();  // close() is async, call cb after close completes.
       });
     }).on('error', err => { // Handle errors
       fs.unlinkSync(dest); // Delete the file async. (But we don't check the result)
