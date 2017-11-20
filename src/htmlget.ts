@@ -1,7 +1,8 @@
 
 import { get } from "http";
+import * as fs from "fs"
 
-export function GetHtml(pUrl: string, BodyParse: (rawBody: string,content:string) => void) {
+export function GetHtml(pUrl: string, bodyParse: (rawBody: string,content:string) => void) {
 
     get(pUrl, (res:any) => {
         const { statusCode } = res;
@@ -13,7 +14,7 @@ export function GetHtml(pUrl: string, BodyParse: (rawBody: string,content:string
                 `Status Code: ${statusCode}`);
         } else if (!/^text\/html/.test(contentType)) {
             error = new Error('Invalid content-type.\n' +
-                `Expected application/json but received ${contentType}`);
+                `Expected text/html but received ${contentType}`);
         }
 
         if (error) {
@@ -27,7 +28,7 @@ export function GetHtml(pUrl: string, BodyParse: (rawBody: string,content:string
         let rawBody = "";
         res.on('data', (chunk:any) => {rawBody += chunk; });
         res.on('end', () => {
-            BodyParse(rawBody,contentType)
+            bodyParse(rawBody,contentType)
         });
 
     }).on('error', (e) => {
@@ -35,15 +36,16 @@ export function GetHtml(pUrl: string, BodyParse: (rawBody: string,content:string
     });
 }
 //https://stackoverflow.com/questions/11944932/how-to-download-a-file-with-node-js-without-using-third-party-libraries
-export function DownloadFile(url:string, dest:string, cb) {
+export function DownloadFile(url:string, dest:string, commit:() => void,error:(message:NodeJS.ErrnoException) => void) {
     var file = fs.createWriteStream(dest);
-    var request = http.get(url, function(response) {
+    var request = get(url, response => {
       response.pipe(file);
-      file.on('finish', function() {
-        file.close(cb);  // close() is async, call cb after close completes.
+      file.on('finish', () => {
+        file.close();  // close() is async, call cb after close completes.
+        commit();
       });
-    }).on('error', function(err) { // Handle errors
-      fs.unlink(dest); // Delete the file async. (But we don't check the result)
-      if (cb) cb(err.message);
+    }).on('error', err => { // Handle errors
+      fs.unlinkSync(dest); // Delete the file async. (But we don't check the result)
+      error(err)
     });
   };

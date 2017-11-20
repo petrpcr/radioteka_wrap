@@ -1,9 +1,9 @@
-import { readFileSync, existsSync, writeFileSync, createWriteStream,unlinkSync} from "fs";
-import { GetHtml } from "./htmlget"
+import * as fs from "fs";
+import { GetHtml, DownloadFile } from "./htmlget"
 
 export class linkRec {
     Date: Date;
-    private _fileExt:string;
+    private _fileExt: string;
 
     constructor(
         private _Folder: string,
@@ -15,18 +15,18 @@ export class linkRec {
         this._fileExt = '.mp3'
     }
 
-    public get folderName():string{
+    public get folderName(): string {
         return this._Folder
     }
     public get fileName(): string {
-        return this._Name  + this._fileExt
+        return this._Name + this._fileExt
     }
 
-    public get urlName():string{
+    public get urlName(): string {
         return this._ID + this._fileExt
     }
 
-    public get ID():string{
+    public get ID(): string {
         return this._ID;
     }
 
@@ -34,58 +34,75 @@ export class linkRec {
 
 export class linkRecStore {
     private _linkRec: Array<linkRec>;
-    private _noExists:Array<linkRec>;
+    
 
-    constructor(private _path: string = "./", 
-                private _fileName: string = "radioteka.json",
-                private _URL:string= 'http://media.rozhlas.cz/_audio/') {
+    constructor(private _path: string = "./",
+        private _fileName: string = "radioteka.json",
+        private _URL: string = 'http://media.rozhlas.cz/_audio/') {
         this._path += this._path.slice(-1) != "/" ? "/" : ""
         this._URL += this._URL.slice(-1) != "/" ? "/" : ""
-        this.loadData();
+        this.loadStore();
     }
 
     public get linkRec(): Array<linkRec> {
         return this._linkRec;
     }
     public set linkRec(pLinkRec: Array<linkRec>) {
-        this._noExists = pLinkRec.filter(item => {
-            return !this._linkRec.some(itemthis => {
-                    return itemthis.ID == item.ID
-            })
-        })
+        
+        
+        pLinkRec.forEach( item => {
 
-        this._linkRec = pLinkRec;
-    }
-    private DownloadAll(){
-        this._noExists.forEach(item =>{
-            var file = createWriteStream(dest);
-            var request = http.get(url, function(response) {
-              response.pipe(file);
-              file.on('finish', function() {
-                file.close(cb);  // close() is async, call cb after close completes.
-              });
-            }).on('error', function(err) { // Handle errors
-              fs.unlink(dest); // Delete the file async. (But we don't check the result)
-              if (cb) cb(err.message);
-            });
+            if (!this._linkRec.some(itemthis => {
+                return itemthis.ID == item.ID
+            }))
+            {
+                var fullFolder = this._path + item.folderName
+                if (!fs.existsSync(fullFolder))
+                    fs.mkdirSync(fullFolder)
+                var fullFileName = fullFolder + "/" + item.fileName
+                DownloadFile(this._URL+item.urlName, fullFileName, () => {
+                    this._linkRec.push(item)
+                    this.saveStore()
+                }, (msg) => {
+                    console.error(msg)
+                })
+            }
         })
     }
+
 
     public get fullName(): string {
         return this._path + this._fileName
     }
 
-    private loadData() {
-        if (existsSync(this.fullName)) {
-            var x: string = readFileSync(this.fullName).toString()
+    private loadStore() {
+        if (fs.existsSync(this.fullName)) {
+            var x: string = fs.readFileSync(this.fullName).toString()
             this._linkRec = JSON.parse(x);
         }
         else
             this._linkRec = new Array<linkRec>();
     }
 
-    saveData() {
-        writeFileSync(this.fullName, JSON.stringify(this._linkRec))
+    saveStore() {
+        var today = new Date()
+        today.setDate(today.getDate() + 20) // only 20 day old history
+
+        // filtering and sorting history
+        this._linkRec = this._linkRec.filter(a => {
+            a.Date.getTime() < today.getTime()
+        }).sort((a, b) => {
+
+            if (a.Date < b.Date)
+                return -1
+
+            if (a.Date < b.Date)
+                return 1
+
+            return 0
+
+        })
+        fs.writeFileSync(this.fullName, JSON.stringify(this._linkRec))
     }
 
 }
