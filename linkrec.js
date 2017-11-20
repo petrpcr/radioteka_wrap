@@ -31,6 +31,9 @@ var linkRecStore = /** @class */ (function () {
         get: function () {
             return this._linkRec;
         },
+        set: function (pLinkRec) {
+            this._linkRec = pLinkRec;
+        },
         enumerable: true,
         configurable: true
     });

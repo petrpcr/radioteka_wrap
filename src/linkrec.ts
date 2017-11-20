@@ -28,6 +28,9 @@ export class linkRecStore {
     public get linkRec() : Array<linkRec> {
         return this._linkRec;
     }
+    public set linkRec(pLinkRec:Array<linkRec>){
+        this._linkRec = pLinkRec;
+    }
     
     public get fullName() : string  {
         return this._path + this._fileName
