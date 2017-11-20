@@ -34,7 +34,7 @@ export function GetHtml(pUrl: string, BodyParse: (rawBody: string,content:string
         console.error(`Got error: ${e.message}`);
     });
 }
-
+//https://stackoverflow.com/questions/11944932/how-to-download-a-file-with-node-js-without-using-third-party-libraries
 export function DownloadFile(url:string, dest:string, cb) {
     var file = fs.createWriteStream(dest);
     var request = http.get(url, function(response) {
