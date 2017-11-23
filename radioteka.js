@@ -2,12 +2,16 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const cheerio = require("cheerio");
 const htmlget_1 = require("./htmlget");
+const fs = require("fs");
 const linkrec_1 = require("./linkrec");
-var UrlRadioteka = 'http://www.rozhlas.cz/dvojka/stream/';
-var UrlRadioteka_mp3 = 'http://media.rozhlas.cz/_audio/';
-var StorePath = '/Users/petrp/Music/Povídky/Radiotéka/';
-var StoreFileName = 'radioteka.json';
-var RecordStore = new linkrec_1.linkRecStore(StorePath, StoreFileName, UrlRadioteka_mp3);
+class Config {
+}
+var MyConfig = JSON.parse(fs.readFileSync(__dirname + "/radioteka_config.json").toString());
+// var UrlRadioteka: string = 'http://www.rozhlas.cz/dvojka/stream/';
+// var UrlRadioteka_mp3: string = 'http://media.rozhlas.cz/_audio/'
+// var StorePath: string = '/Users/petrp/Music/Povídky/Radiotéka/'
+// var StoreFileName: string = 'radioteka_store.json'
+var RecordStore = new linkrec_1.linkRecStore(MyConfig.StorePath, MyConfig.StoreFileName, MyConfig.UrlMp3);
 function Parsuj(pHtmlBody) {
     const $ = cheerio.load(pHtmlBody);
     var tmpLinkRec = new Array();
@@ -17,7 +21,7 @@ function Parsuj(pHtmlBody) {
     });
     RecordStore.linkRec = tmpLinkRec;
 }
-htmlget_1.httpGet(UrlRadioteka)
+htmlget_1.httpGet(MyConfig.UrlHtml)
     .then((data) => {
     Parsuj(data.Buffer.toString());
 })

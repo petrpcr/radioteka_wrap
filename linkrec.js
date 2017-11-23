@@ -33,7 +33,7 @@ class linkRecStore {
     get linkRec() {
         return this._linkRec;
     }
-    sanititeFileName(pString) {
+    sanitizeFileName(pString) {
         try {
             pString = sanitize(pString.trim().replace(/[//]/g, "_"));
             return pString.charAt(0).toUpperCase() + pString.slice(1);
@@ -57,8 +57,8 @@ class linkRecStore {
                     // not exist ":" separator :-((
                     if (informace.length == 1)
                         informace.push(informace[0]);
-                    var fileName = this.sanititeFileName(informace[1] + item.fileExt);
-                    var folderName = this.sanititeFileName(informace[0]);
+                    var fileName = this.sanitizeFileName(informace[1] + item.fileExt);
+                    var folderName = this.sanitizeFileName(informace[0]);
                     var fullFolder = this._path + folderName;
                     if (!fs.existsSync(fullFolder))
                         fs.mkdirSync(fullFolder);

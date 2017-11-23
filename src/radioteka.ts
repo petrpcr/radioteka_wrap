@@ -1,15 +1,19 @@
-
 const cheerio = require("cheerio");
 
 import { httpGet } from "./htmlget"
+import * as fs from "fs";
 import { linkRec, linkRecStore } from "./linkrec"
 
-var UrlRadioteka: string = 'http://www.rozhlas.cz/dvojka/stream/';
-var UrlRadioteka_mp3: string = 'http://media.rozhlas.cz/_audio/'
-var StorePath: string = '/Users/petrp/Music/Povídky/Radiotéka/'
-var StoreFileName: string = 'radioteka.json'
+class Config {
+  UrlHtml: string
+  UrlMp3:string
+  StorePath:string
+  StoreFileName:string
+}
 
-var RecordStore = new linkRecStore(StorePath, StoreFileName, UrlRadioteka_mp3);
+var MyConfig = <Config>JSON.parse(fs.readFileSync(__dirname + "/radioteka_config.json").toString())
+
+var RecordStore = new linkRecStore(MyConfig.StorePath, MyConfig.StoreFileName, MyConfig.UrlMp3);
 
 function Parsuj(pHtmlBody: string) {
   const $ = cheerio.load(pHtmlBody);
@@ -21,7 +25,7 @@ function Parsuj(pHtmlBody: string) {
   RecordStore.linkRec = tmpLinkRec
 }
 
-httpGet(UrlRadioteka)
+httpGet(MyConfig.UrlHtml)
   .then((data) => {
     Parsuj(data.Buffer.toString())
   })
