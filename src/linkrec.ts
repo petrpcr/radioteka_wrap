@@ -51,7 +51,7 @@ export class linkRecStore {
         return this._linkRec;
     }
 
-    private sanititeFileName(pString: string): string {
+    private sanitizeFileName(pString: string): string {
         try {
             pString = sanitize(pString.trim().replace(/[//]/g, "_"))
             return pString.charAt(0).toUpperCase() + pString.slice(1);
@@ -82,8 +82,8 @@ export class linkRecStore {
                         if (informace.length == 1)
                             informace.push(informace[0])
 
-                        var fileName = this.sanititeFileName(informace[1] + item.fileExt)
-                        var folderName = this.sanititeFileName(informace[0])
+                        var fileName = this.sanitizeFileName(informace[1] + item.fileExt)
+                        var folderName = this.sanitizeFileName(informace[0])
                         var fullFolder = this._path + folderName
 
                         if (!fs.existsSync(fullFolder))
