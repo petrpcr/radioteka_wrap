@@ -1,52 +1,28 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var fs = require("fs");
-var htmlget_1 = require("./htmlget");
-var linkRec = /** @class */ (function () {
-    function linkRec(_Folder, _Name, _ID) {
-        this._Folder = _Folder;
-        this._Name = _Name;
+const fs = require("fs");
+const hget = require("./htmlget");
+const NodeID3 = require('node-id3');
+const sanitize = require("sanitize-filename");
+class linkRec {
+    constructor(_ID) {
         this._ID = _ID;
         this.Date = new Date();
-        this._Name = (this._Name || '') == '' ? this._Folder : this._Name;
         this._fileExt = '.mp3';
     }
-    Object.defineProperty(linkRec.prototype, "folderName", {
-        get: function () {
-            return this._Folder;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(linkRec.prototype, "fileName", {
-        get: function () {
-            return this._Name + this._fileExt;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(linkRec.prototype, "urlName", {
-        get: function () {
-            return this._ID + this._fileExt;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(linkRec.prototype, "ID", {
-        get: function () {
-            return this._ID;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    return linkRec;
-}());
+    get urlFileName() {
+        return this._ID + this._fileExt;
+    }
+    get ID() {
+        return this._ID;
+    }
+    get fileExt() {
+        return this._fileExt;
+    }
+}
 exports.linkRec = linkRec;
-var linkRecStore = /** @class */ (function () {
-    function linkRecStore(_path, _fileName, _URL) {
-        if (_path === void 0) { _path = "./"; }
-        if (_fileName === void 0) { _fileName = "radioteka.json"; }
-        if (_URL === void 0) { _URL = 'http://media.rozhlas.cz/_audio/'; }
+class linkRecStore {
+    constructor(_path = "./", _fileName = "radioteka.json", _URL = 'http://media.rozhlas.cz/_audio/') {
         this._path = _path;
         this._fileName = _fileName;
         this._URL = _URL;
@@ -54,54 +30,69 @@ var linkRecStore = /** @class */ (function () {
         this._URL += this._URL.slice(-1) != "/" ? "/" : "";
         this.loadStore();
     }
-    Object.defineProperty(linkRecStore.prototype, "linkRec", {
-        get: function () {
-            return this._linkRec;
-        },
-        set: function (pLinkRec) {
-            var _this = this;
-            pLinkRec.forEach(function (item) {
-                if (!_this._linkRec.some(function (itemthis) {
-                    return itemthis.ID == item.ID;
-                })) {
-                    var fullFolder = _this._path + item.folderName;
+    get linkRec() {
+        return this._linkRec;
+    }
+    sanititeFileName(pString) {
+        try {
+            pString = sanitize(pString.trim().replace(/[//]/g, "_"));
+            return pString.charAt(0).toUpperCase() + pString.slice(1);
+        }
+        catch (_a) {
+            return '';
+        }
+    }
+    set linkRec(pLinkRec) {
+        var tmpLeng = this._linkRec.length;
+        pLinkRec.forEach((item, index) => {
+            // if not exists in linkRec database
+            if (!this._linkRec.some(itemthis => {
+                return itemthis.ID == item.ID;
+            })) {
+                // downloading a adding to database
+                hget.httpGet(this._URL + item.urlFileName)
+                    .then((data) => {
+                    let tags = NodeID3.read(data.Buffer);
+                    var informace = tags.title.split(".")[0].split(":");
+                    // not exist ":" separator :-((
+                    if (informace.length == 1)
+                        informace.push(informace[0]);
+                    var fileName = this.sanititeFileName(informace[1] + item.fileExt);
+                    var folderName = this.sanititeFileName(informace[0]);
+                    var fullFolder = this._path + folderName;
                     if (!fs.existsSync(fullFolder))
                         fs.mkdirSync(fullFolder);
-                    var fullFileName = fullFolder + "/" + item.fileName;
-                    htmlget_1.DownloadFile(_this._URL + item.urlName, fullFileName, function () {
-                        _this._linkRec.push(item);
-                        _this.saveStore();
-                    }, function (msg) {
-                        console.error(msg);
-                    });
-                }
-            });
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(linkRecStore.prototype, "fullName", {
-        get: function () {
-            return this._path + this._fileName;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    linkRecStore.prototype.loadStore = function () {
+                    var fullFileName = fullFolder + "/" + fileName;
+                    fs.writeFileSync(fullFileName, data.Buffer);
+                    this._linkRec.push(item);
+                })
+                    .catch((err) => {
+                    console.log(err);
+                });
+            }
+        });
+        if (tmpLeng < this._linkRec.length)
+            this.saveStore();
+    }
+    get fullName() {
+        return this._path + this._fileName;
+    }
+    loadStore() {
         if (fs.existsSync(this.fullName)) {
             var x = fs.readFileSync(this.fullName).toString();
             this._linkRec = JSON.parse(x);
         }
         else
             this._linkRec = new Array();
-    };
-    linkRecStore.prototype.saveStore = function () {
-        var today = new Date();
-        today.setDate(today.getDate() + 20); // only 20 day old history
+    }
+    saveStore() {
+        var timeLimit = new Date();
+        timeLimit.setDate(timeLimit.getDate() - 20); // only 20 day old history
         // filtering and sorting history
-        this._linkRec = this._linkRec.filter(function (a) {
-            a.Date.getTime() < today.getTime();
-        }).sort(function (a, b) {
+        this._linkRec = this._linkRec.filter(a => {
+            return a.Date.getTime() > timeLimit.getTime();
+        })
+            .sort((a, b) => {
             if (a.Date < b.Date)
                 return -1;
             if (a.Date < b.Date)
@@ -109,8 +100,7 @@ var linkRecStore = /** @class */ (function () {
             return 0;
         });
         fs.writeFileSync(this.fullName, JSON.stringify(this._linkRec));
-    };
-    return linkRecStore;
-}());
+    }
+}
 exports.linkRecStore = linkRecStore;
 //# sourceMappingURL=linkrec.js.map

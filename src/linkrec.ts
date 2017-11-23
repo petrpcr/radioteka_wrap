@@ -1,28 +1,26 @@
 import * as fs from "fs";
-import { GetHtml, DownloadFile } from "./htmlget"
+import * as hget from "./htmlget"
+const NodeID3 = require('node-id3')
+const sanitize = require("sanitize-filename")
+
+export type mp3Tags = {
+    title: string,
+    artist: string,
+    album: string
+}
 
 export class linkRec {
     Date: Date;
     private _fileExt: string;
 
     constructor(
-        private _Folder: string,
-        private _Name: string,
         private _ID: string
     ) {
         this.Date = new Date()
-        this._Name = (this._Name || '') == '' ? this._Folder : this._Name
         this._fileExt = '.mp3'
     }
 
-    public get folderName(): string {
-        return this._Folder
-    }
-    public get fileName(): string {
-        return this._Name + this._fileExt
-    }
-
-    public get urlName(): string {
+    public get urlFileName(): string {
         return this._ID + this._fileExt
     }
 
@@ -30,11 +28,16 @@ export class linkRec {
         return this._ID;
     }
 
+    public get fileExt(): string {
+        return this._fileExt
+    }
+
 }
 
 export class linkRecStore {
     private _linkRec: Array<linkRec>;
-    
+    private _CountDown: number;
+
 
     constructor(private _path: string = "./",
         private _fileName: string = "radioteka.json",
@@ -47,28 +50,60 @@ export class linkRecStore {
     public get linkRec(): Array<linkRec> {
         return this._linkRec;
     }
-    public set linkRec(pLinkRec: Array<linkRec>) {
-        
-        pLinkRec.forEach( item => {
 
-            if (!this._linkRec.some(itemthis => {
-                return itemthis.ID == item.ID
-            }))
-            {
-                var fullFolder = this._path + item.folderName
-                if (!fs.existsSync(fullFolder))
-                    fs.mkdirSync(fullFolder)
-                var fullFileName = fullFolder + "/" + item.fileName
-                DownloadFile(this._URL+item.urlName, fullFileName, () => {
-                    this._linkRec.push(item)
-                    this.saveStore()
-                }, (msg) => {
-                    console.error(msg)
-                })
-            }
-        })
+    private sanititeFileName(pString: string): string {
+        try {
+            pString = sanitize(pString.trim().replace(/[//]/g, "_"))
+            return pString.charAt(0).toUpperCase() + pString.slice(1);
+        }
+        catch{
+            return ''
+        }
     }
 
+    public set linkRec(pLinkRec: Array<linkRec>) {
+
+        var tmpLeng = this._linkRec.length;
+
+        pLinkRec.forEach((item, index) => {
+
+
+            // if not exists in linkRec database
+            if (!this._linkRec.some(itemthis => {
+                return itemthis.ID == item.ID
+            })) {
+                // downloading a adding to database
+                hget.httpGet(this._URL + item.urlFileName)
+                    .then((data) => {
+                        let tags = <mp3Tags>NodeID3.read(data.Buffer)
+                        var informace = tags.title.split(".")[0].split(":")
+
+                        // not exist ":" separator :-((
+                        if (informace.length == 1)
+                            informace.push(informace[0])
+
+                        var fileName = this.sanititeFileName(informace[1] + item.fileExt)
+                        var folderName = this.sanititeFileName(informace[0])
+                        var fullFolder = this._path + folderName
+
+                        if (!fs.existsSync(fullFolder))
+                            fs.mkdirSync(fullFolder)
+
+                        var fullFileName = fullFolder + "/" + fileName
+
+                        fs.writeFileSync(fullFileName, data.Buffer)
+                        this._linkRec.push(item)
+                    })
+                    .catch((err) => {
+                        console.log(err)
+                    })
+            }
+
+        })
+
+        if (tmpLeng < this._linkRec.length)
+            this.saveStore()
+    }
 
     public get fullName(): string {
         return this._path + this._fileName
@@ -83,24 +118,25 @@ export class linkRecStore {
             this._linkRec = new Array<linkRec>();
     }
 
-    saveStore() {
-        var today = new Date()
-        today.setDate(today.getDate() + 20) // only 20 day old history
+    private saveStore() {
+
+        var timeLimit = new Date()
+        timeLimit.setDate(timeLimit.getDate() - 20) // only 20 day old history
 
         // filtering and sorting history
+
         this._linkRec = this._linkRec.filter(a => {
-            a.Date.getTime() < today.getTime()
-        }).sort((a, b) => {
-
-            if (a.Date < b.Date)
-                return -1
-
-            if (a.Date < b.Date)
-                return 1
-
-            return 0
-
+            return a.Date.getTime() > timeLimit.getTime()
         })
+            .sort((a, b) => {
+                if (a.Date < b.Date)
+                    return -1
+
+                if (a.Date < b.Date)
+                    return 1
+
+                return 0
+            })
         fs.writeFileSync(this.fullName, JSON.stringify(this._linkRec))
     }
 
