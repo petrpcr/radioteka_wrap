@@ -7,10 +7,6 @@ const linkrec_1 = require("./linkrec");
 class Config {
 }
 var MyConfig = JSON.parse(fs.readFileSync(__dirname + "/radioteka_config.json").toString());
-// var UrlRadioteka: string = 'http://www.rozhlas.cz/dvojka/stream/';
-// var UrlRadioteka_mp3: string = 'http://media.rozhlas.cz/_audio/'
-// var StorePath: string = '/Users/petrp/Music/Povídky/Radiotéka/'
-// var StoreFileName: string = 'radioteka_store.json'
 var RecordStore = new linkrec_1.linkRecStore(MyConfig.StorePath, MyConfig.StoreFileName, MyConfig.UrlMp3);
 function Parsuj(pHtmlBody) {
     const $ = cheerio.load(pHtmlBody);

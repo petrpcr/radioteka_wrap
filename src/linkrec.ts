@@ -67,12 +67,13 @@ export class linkRecStore {
 
         pLinkRec.forEach((item, index) => {
 
-
+            console.log(" Prověřuji : " + item.urlFileName)
             // if not exists in linkRec database
             if (!this._linkRec.some(itemthis => {
                 return itemthis.ID == item.ID
             })) {
                 // downloading a adding to database
+                console.log("Nahrávám : " + item.urlFileName)
                 hget.httpGet(this._URL + item.urlFileName)
                     .then((data) => {
                         let tags = <mp3Tags>NodeID3.read(data.Buffer)
@@ -93,6 +94,7 @@ export class linkRecStore {
 
                         fs.writeFileSync(fullFileName, data.Buffer)
                         this._linkRec.push(item)
+                        console.log(" Uloženo : " + fileName)
                     })
                     .catch((err) => {
                         console.log(err)
