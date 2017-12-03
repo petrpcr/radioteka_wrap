@@ -10,13 +10,14 @@ export type mp3Tags = {
 }
 
 export class linkRec {
-    Date: Date;
+    public Date: Date;
     private _fileExt: string;
 
     constructor(
-        private _ID: string
+        private _ID: string,
+        public pDate?: Date
     ) {
-        this.Date = new Date()
+        this.Date = pDate || new Date()
         this._fileExt = '.mp3'
     }
 
@@ -63,48 +64,60 @@ export class linkRecStore {
 
     public set linkRec(pLinkRec: Array<linkRec>) {
 
-        var tmpLeng = this._linkRec.length;
+        fs.writeFileSync(this._path + "linkRecLOG.json", JSON.stringify(pLinkRec))
 
-        pLinkRec.forEach((item, index) => {
+        // filtering items where aren't exists in linkRec database
+        var NoExists = pLinkRec.filter(itemfilter => {
+            console.log(" Testing : " + itemfilter.urlFileName)
+            return  !this._linkRec.some(actItemSome => 
+                actItemSome.ID == itemfilter.ID
+             )})
+             
+        var countdown = NoExists.length;
 
-            console.log(" Prověřuji : " + item.urlFileName)
-            // if not exists in linkRec database
-            if (!this._linkRec.some(itemthis => {
-                return itemthis.ID == item.ID
-            })) {
-                // downloading a adding to database
-                console.log("Nahrávám : " + item.urlFileName)
-                hget.httpGet(this._URL + item.urlFileName)
-                    .then((data) => {
-                        let tags = <mp3Tags>NodeID3.read(data.Buffer)
-                        var informace = tags.title.split(".")[0].split(":")
+        NoExists.forEach((item, index) => {
+            
+            // downloading a adding to database
+            console.log(" Download : " + item.urlFileName)
+            hget.httpGet(this._URL + item.urlFileName)
+                .then((data) => {
+                    let tags = <mp3Tags>NodeID3.read(data.Buffer)
+                    var informace = tags.title.split(".")[0].split(":")
 
-                        // not exist ":" separator :-((
-                        if (informace.length == 1)
-                            informace.push(informace[0])
+                    // not exist ":" separator :-((
+                    if (informace.length == 1)
+                        informace.push(informace[0])
 
-                        var fileName = this.sanitizeFileName(informace[1] + item.fileExt)
-                        var folderName = this.sanitizeFileName(informace[0])
-                        var fullFolder = this._path + folderName
+                    var fileName = this.sanitizeFileName(informace[1] + item.fileExt)
+                    var folderName = this.sanitizeFileName(informace[0])
+                    var fullFolder = this._path + folderName
 
-                        if (!fs.existsSync(fullFolder))
-                            fs.mkdirSync(fullFolder)
+                    if (!fs.existsSync(fullFolder))
+                        fs.mkdirSync(fullFolder)
 
-                        var fullFileName = fullFolder + "/" + fileName
+                    var fullFileName = fullFolder + "/" + fileName
 
-                        fs.writeFileSync(fullFileName, data.Buffer)
-                        this._linkRec.push(item)
-                        console.log(" Uloženo : " + fileName)
-                    })
-                    .catch((err) => {
-                        console.log(err)
-                    })
-            }
+                    fs.writeFileSync(fullFileName, data.Buffer)
+                    this._linkRec.push(item)
+                    countdown -= 1
+                    console.log(" Saved : " + fileName + "  index:" +countdown +"  "+item.ID)
+                   
+                    // If last item then save
+                    if (countdown == 0){
+                        this.saveStore()
+                        console.log("Finished downloading")
+                    }
+                        
+                    
+                })
+                .catch((err) => {
+                    console.log(err)
+                }
+                )
 
         })
 
-        if (tmpLeng < this._linkRec.length)
-            this.saveStore()
+
     }
 
     public get fullName(): string {
@@ -112,12 +125,13 @@ export class linkRecStore {
     }
 
     private loadStore() {
+        this._linkRec = new Array<linkRec>();
         if (fs.existsSync(this.fullName)) {
             var x: string = fs.readFileSync(this.fullName).toString()
-            this._linkRec = JSON.parse(x);
+            JSON.parse(x).forEach((item: any, index: number) => {
+                this._linkRec.push(new linkRec(item._ID, new Date(item.Date)))
+            })
         }
-        else
-            this._linkRec = new Array<linkRec>();
     }
 
     private saveStore() {

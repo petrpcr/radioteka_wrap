@@ -3,12 +3,14 @@ import * as http from "http";
 import * as fs from "fs"
 import * as stream from "stream"
 
+const  Promise = require("bluebird")
+
 export type httpStat = {
     Response: http.IncomingMessage,
     Buffer: Buffer
 }
 export function httpGet(pUrl: string): Promise<httpStat> {
-    return new Promise<httpStat>((resolve: (value: httpStat) => void, reject: (reason: any) => void) => {
+    return new Promise((resolve: (value: httpStat) => void, reject: (reason: any) => void) => {
 
         http.get(pUrl, (res: http.IncomingMessage) => {
             let buffers = new Array();
