@@ -16,7 +16,8 @@ function Parsuj(pHtmlBody) {
     var tmpLinkRec = new Array();
     $('li[class=item] > a[class="icon player-archive"]').each(function (index, elm) {
         var ID = elm.attribs.href.split("/").slice(-1).pop();
-        tmpLinkRec.push(new linkrec_1.linkRec(ID));
+        var title = elm.parent.children[0].children[0].attribs.title;
+        tmpLinkRec.push(new linkrec_1.linkRec(ID, undefined, title));
     });
     RecordStore.linkRec = tmpLinkRec;
 }

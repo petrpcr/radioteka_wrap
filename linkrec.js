@@ -5,10 +5,10 @@ var hget = require("./htmlget");
 var NodeID3 = require('node-id3');
 var sanitize = require("sanitize-filename");
 var linkRec = /** @class */ (function () {
-    function linkRec(_ID, pDate) {
+    function linkRec(_ID, pDate, pTitle) {
         this._ID = _ID;
-        this.pDate = pDate;
         this.Date = pDate || new Date();
+        this.Title = pTitle || '';
         this._fileExt = '.mp3';
     }
     Object.defineProperty(linkRec.prototype, "urlFileName", {
@@ -28,6 +28,13 @@ var linkRec = /** @class */ (function () {
     Object.defineProperty(linkRec.prototype, "fileExt", {
         get: function () {
             return this._fileExt;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(linkRec.prototype, "StoreObj", {
+        get: function () {
+            return { _ID: this._ID, Date: this.Date, _fileExt: this._fileExt };
         },
         enumerable: true,
         configurable: true
@@ -67,8 +74,14 @@ var linkRecStore = /** @class */ (function () {
                 console.log(" Download : " + item.urlFileName);
                 hget.httpGet(_this._URL + item.urlFileName)
                     .then(function (data) {
-                    var tags = NodeID3.read(data.Buffer);
-                    var informace = tags.title.split(".")[0].split(":");
+                    var informace;
+                    if ((item.Title || '') == '') {
+                        var tags = NodeID3.read(data.Buffer);
+                        informace = tags.title.split(".")[0].split(":");
+                    }
+                    else {
+                        informace = item.Title.split(":");
+                    }
                     // not exist ":" separator :-((
                     if (informace.length == 1)
                         informace.push(informace[0]);
@@ -136,7 +149,8 @@ var linkRecStore = /** @class */ (function () {
                 return 1;
             return 0;
         });
-        fs.writeFileSync(this.fullName, JSON.stringify(this._linkRec));
+        var storeItems = this._linkRec.map(function (item) { return item.StoreObj; });
+        fs.writeFileSync(this.fullName, JSON.stringify(storeItems));
     };
     return linkRecStore;
 }());

@@ -20,7 +20,8 @@ function Parsuj(pHtmlBody: string) {
   var tmpLinkRec = new Array<linkRec>()
   $('li[class=item] > a[class="icon player-archive"]').each((index: number, elm: any) => {
     var ID = elm.attribs.href.split("/").slice(-1).pop()
-    tmpLinkRec.push(new linkRec(ID))
+    var title = elm.parent.children[0].children[0].attribs.title
+    tmpLinkRec.push(new linkRec(ID,undefined, title))
   });
   RecordStore.linkRec = tmpLinkRec
 }

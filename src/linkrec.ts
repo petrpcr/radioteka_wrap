@@ -11,13 +11,16 @@ export type mp3Tags = {
 
 export class linkRec {
     public Date: Date;
+    public Title:string
     private _fileExt: string;
 
     constructor(
         private _ID: string,
-        public pDate?: Date
+        pDate?: Date,
+        pTitle?:string
     ) {
         this.Date = pDate || new Date()
+        this.Title = pTitle || ''
         this._fileExt = '.mp3'
     }
 
@@ -32,6 +35,13 @@ export class linkRec {
     public get fileExt(): string {
         return this._fileExt
     }
+
+    public get StoreObj():any {
+        return {_ID:this._ID,Date:this.Date,_fileExt: this._fileExt}
+        ;
+    }
+    
+    
 
 }
 
@@ -81,8 +91,15 @@ export class linkRecStore {
             console.log(" Download : " + item.urlFileName)
             hget.httpGet(this._URL + item.urlFileName)
                 .then((data) => {
-                    let tags = <mp3Tags>NodeID3.read(data.Buffer)
-                    var informace = tags.title.split(".")[0].split(":")
+                    var informace
+                    if((item.Title || '') ==''){
+                        let tags = <mp3Tags>NodeID3.read(data.Buffer)
+                        informace = tags.title.split(".")[0].split(":")    
+                    }
+                    else{
+                        informace = item.Title.split(":")
+                    }
+                    
 
                     // not exist ":" separator :-((
                     if (informace.length == 1)
@@ -153,7 +170,8 @@ export class linkRecStore {
 
                 return 0
             })
-        fs.writeFileSync(this.fullName, JSON.stringify(this._linkRec))
+            var storeItems = this._linkRec.map(item => item.StoreObj)
+        fs.writeFileSync(this.fullName, JSON.stringify(storeItems))
     }
 
 }
